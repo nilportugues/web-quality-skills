@@ -36,6 +36,7 @@ Deep performance optimization based on Lighthouse performance audits. Focuses on
 * **Enable compression.** Gzip or Brotli for text assets. Brotli preferred (15-20% smaller).
 * **HTTP/2 or HTTP/3.** Multiplexing reduces connection overhead.
 * **Edge caching.** Cache HTML at CDN edge when possible.
+* **Send Early Hints (HTTP 103) for slow origins.** When the origin needs hundreds of milliseconds to assemble the final response, return a `103 Early Hints` with `Link: </hero.webp>; rel=preload; as=image` (and similar for critical CSS/fonts) so the browser starts fetching before the `200 OK` lands. Cloudflare reports [20–30% LCP improvements](https://blog.cloudflare.com/early-hints-performance/) on image-heavy pages. Requires HTTP/2+ and is supported by Chromium-based browsers; other browsers ignore the 103 and fall through to the 200 — safe to enable. CDNs (Cloudflare, Fastly, Akamai) can synthesize 103s automatically from prior responses; on your own origin, emit them from the same handler that issues the 200.
 
 ### Resource loading
 

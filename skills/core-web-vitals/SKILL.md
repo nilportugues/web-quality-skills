@@ -74,6 +74,28 @@ export async function getServerSideProps() {
 }
 ```
 
+**5. Make navigations instant with the Speculation Rules API**
+
+For most sites, the LCP a user actually experiences is dominated by *the next page they navigate to*, not the one they landed on. Telling the browser to prerender likely-next pages on hover collapses that LCP to ~0ms.
+
+```html
+<script type="speculationrules">
+{
+  "prerender": [{
+    "where": { "href_matches": "/*" },
+    "eagerness": "moderate"
+  }]
+}
+</script>
+```
+
+`eagerness` settings (cheapest → most aggressive): `conservative` (start on pointerdown), `moderate` (start after ~200ms hover), `eager` (start as soon as the link is in the viewport), `immediate` (start on page load). Start with `moderate` — it captures most navigations without prerendering pages users never visit.
+
+Caveats:
+- **Bandwidth/CPU cost.** Each prerender is roughly a full page load. Scope `where` carefully (`href_matches` patterns, exclude logout/checkout) and avoid `immediate` outside small sites.
+- **Side effects fire early.** Analytics, ads, and any code that runs on load will fire when the prerender starts, not when the user navigates. Gate side effects on the [`prerenderingchange` event](https://developer.chrome.com/docs/web-platform/prerender-pages#detect_when_a_page_is_prerendered_or_used_for_a_full_navigation) or `document.prerendering`.
+- **Chromium-only.** Safari and Firefox ignore the script — it's a progressive enhancement, never a regression.
+
 ### LCP optimization checklist
 
 ```markdown
@@ -84,6 +106,7 @@ export async function getServerSideProps() {
 - [ ] No render-blocking JavaScript in <head>
 - [ ] Fonts don't block text rendering (font-display: swap)
 - [ ] LCP element in initial HTML (not JS-rendered)
+- [ ] Speculation Rules added for likely-next navigations (moderate eagerness)
 ```
 
 ### LCP element identification

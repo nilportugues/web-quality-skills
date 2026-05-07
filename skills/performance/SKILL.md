@@ -54,6 +54,19 @@ Deep performance optimization based on Lighthouse performance audits. Focuses on
 <link rel="preload" href="/font.woff2" as="font" type="font/woff2" crossorigin>
 ```
 
+**Prerender likely-next navigations** with the [Speculation Rules API](https://developer.chrome.com/docs/web-platform/prerender-pages):
+```html
+<script type="speculationrules">
+{
+  "prerender": [{
+    "where": { "href_matches": "/*" },
+    "eagerness": "moderate"
+  }]
+}
+</script>
+```
+`moderate` triggers after a ~200ms hover — usually intent-correlated, rarely wasted. See [core-web-vitals → LCP](../core-web-vitals/SKILL.md#lcp-largest-contentful-paint) for the full discussion of eagerness tradeoffs and the `prerenderingchange` gating you'll need for analytics.
+
 **Defer non-critical CSS:**
 ```html
 <!-- Critical CSS inlined -->

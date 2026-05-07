@@ -67,6 +67,41 @@ Content-Security-Policy:
 </script>
 ```
 
+### Trusted Types (modern DOM-XSS defense)
+
+A strict CSP blocks loading untrusted *script files*, but it doesn't stop a string from reaching `innerHTML`, `eval`, or other DOM-XSS sinks. Trusted Types — Baseline across all major browsers since early 2026 — closes that hole by making sinks reject raw strings and accept only typed objects produced by a named policy.
+
+```
+Content-Security-Policy: require-trusted-types-for 'script'; trusted-types default;
+```
+
+```javascript
+// One central policy that does the sanitization
+const escape = trustedTypes.createPolicy('default', {
+  createHTML: (s) => DOMPurify.sanitize(s, { RETURN_TRUSTED_TYPE: true })
+});
+
+// ❌ This now throws TypeError under enforcement
+element.innerHTML = userInput;
+
+// ✅ Goes through the policy
+element.innerHTML = escape.createHTML(userInput);
+```
+
+Roll out with `Content-Security-Policy-Report-Only` first to find every sink usage in your app, then flip to enforcement. Angular has built-in Trusted Types support; React 19+ produces TrustedHTML when Trusted Types are enforced; for everything else, [DOMPurify](https://github.com/cure53/DOMPurify) is the de-facto sanitizer.
+
+### Subresource Integrity (SRI) for third-party scripts
+
+Pin every `<script>` and `<link rel="stylesheet">` you load from a CDN you don't control. If the CDN is compromised — as happened to polyfill.io in 2024 — the browser refuses to execute a file whose hash doesn't match.
+
+```html
+<script src="https://cdn.example.com/lib@1.2.3/dist/lib.js"
+        integrity="sha384-oqVuAfXRKap7fdgcCY5uykM6+R9GqQ8K/uxy9rx7HNQlGYl1kPzQho1wx4JwY8wC"
+        crossorigin="anonymous"></script>
+```
+
+`integrity` accepts space-separated hashes; include the next version's hash before rotating to avoid downtime. Generate with `openssl dgst -sha384 -binary file.js | openssl base64 -A`. SRI requires `crossorigin` and an `Access-Control-Allow-Origin` response header from the CDN.
+
 ### Security headers
 
 ```
@@ -563,9 +598,11 @@ findNearbyButton.addEventListener('click', async () => {
 ### Security (critical)
 - [ ] HTTPS enabled, no mixed content
 - [ ] No vulnerable dependencies (`npm audit`)
-- [ ] CSP headers configured
-- [ ] Security headers present
-- [ ] No exposed source maps
+- [ ] CSP headers configured (with `frame-ancestors`, `base-uri`, `form-action`)
+- [ ] `require-trusted-types-for 'script'` enforced (or report-only during rollout)
+- [ ] Third-party `<script>`/`<link rel="stylesheet">` pinned with SRI hashes
+- [ ] Security headers present (HSTS, X-Content-Type-Options, Referrer-Policy)
+- [ ] No exposed source maps (and `sourcesContent` stripped from uploaded ones)
 
 ### Compatibility
 - [ ] Valid HTML5 doctype

@@ -47,6 +47,16 @@ Or manually:
 cp -r skills/* ~/.claude/skills/
 ```
 
+#### Codex
+
+Install directly via the Codex plugin marketplace (Codex CLI v0.122+):
+
+```bash
+codex plugin marketplace add addyosmani/web-quality-skills
+```
+
+Once installed, invoke skills in chat using `@` (e.g. `@performance`, `@accessibility`). See [docs/codex-setup.md](docs/codex-setup.md) for local installation and troubleshooting.
+
 #### Gemini CLI
 
 Install directly via Gemini CLI extensions:
